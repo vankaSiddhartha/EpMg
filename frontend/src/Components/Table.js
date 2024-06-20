@@ -1,94 +1,134 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableContainer from "@material-ui/core/TableContainer";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import Paper from "@material-ui/core/Paper";
-import Avatar from "@material-ui/core/Avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Avatar,
+  Typography,
+  CircularProgress,
+  Container,
+  Box,
+  TextField,
+  InputAdornment
+} from "@material-ui/core";
 import GroupIcon from "@material-ui/icons/Group";
+import SearchIcon from "@material-ui/icons/Search";
 import { Link } from "react-router-dom";
-import Typography from "@material-ui/core/Typography";
-import CircularProgress from "@material-ui/core/CircularProgress";
 
-const useStyles = makeStyles(theme => ({
-  table: {
-    minWidth: 600
+const useStyles = makeStyles((theme) => ({
+  root: {
+    marginTop: theme.spacing(4),
+    marginBottom: theme.spacing(4),
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: theme.spacing(4),
   },
   avatar: {
     margin: theme.spacing(1),
-    backgroundColor: theme.palette.secondary.main
+    backgroundColor: theme.palette.secondary.main,
+    width: theme.spacing(7),
+    height: theme.spacing(7),
   },
-  paper: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    margin: `10px`,
-    height: "100%",
-    width: "99%",
-    marginTop: theme.spacing(7)
+  table: {
+    minWidth: 650,
+  },
+  tableContainer: {
+    marginTop: theme.spacing(3),
+    marginBottom: theme.spacing(3),
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[3],
+  },
+  searchField: {
+    marginBottom: theme.spacing(3),
   },
   link: {
-    color: "rgba(0,0,0,0.65)",
+    color: theme.palette.text.secondary,
     textDecoration: "none",
-    marginLeft: "10%",
-    alignSelf: "flex-start",
     "&:hover": {
-      color: "rgba(0,0,0,1)"
-    }
-  }
+      color: theme.palette.text.primary,
+    },
+  },
 }));
 
-export default function SimpleTable() {
+export default function EmployeeDirectory() {
   const classes = useStyles();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [data, upDateData] = React.useState([]);
-  const [firstLoad, setLoad] = React.useState(true);
-  let isLoading = true;
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  async function sampleFunc() {
-    let response = await fetch("/api/employee");
-    let body = await response.json();
-    upDateData(body);
-  }
+  const fetchData = async () => {
+    try {
+      const response = await fetch("/api/employee");
+      const body = await response.json();
+      setData(body);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
+  };
 
-  if (firstLoad) {
-    sampleFunc();
-    setLoad(false);
-  }
-
-  if (data.length > 0) isLoading = false;
+  const filteredData = data.filter((employee) =>
+    Object.values(employee).some((value) =>
+      value.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
   return (
-    <div className={classes.paper}>
-      <Avatar className={classes.avatar}>
-        <GroupIcon />
-      </Avatar>
-      <Typography component="h1" variant="h5">
-        Employee Directory
-      </Typography>
+    <Container maxWidth="lg" className={classes.root}>
+      <Box className={classes.header}>
+        <Avatar className={classes.avatar}>
+          <GroupIcon fontSize="large" />
+        </Avatar>
+        <Typography component="h1" variant="h4" gutterBottom>
+          Employee Directory
+        </Typography>
+      </Box>
 
-      {isLoading ? (
-        <CircularProgress />
+      <TextField
+        className={classes.searchField}
+        variant="outlined"
+        fullWidth
+        placeholder="Search employees..."
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      {loading ? (
+        <Box display="flex" justifyContent="center">
+          <CircularProgress />
+        </Box>
       ) : (
-        <TableContainer
-          style={{ width: "80%", margin: "0 10px" }}
-          component={Paper}
-        >
-          <Table className={classes.table} aria-label="simple table">
+        <TableContainer component={Paper} className={classes.tableContainer}>
+          <Table className={classes.table} aria-label="employee table">
             <TableHead>
               <TableRow>
                 <TableCell align="center">Name</TableCell>
                 <TableCell align="center">Department</TableCell>
                 <TableCell align="center">Gender</TableCell>
-                <TableCell align="center">Dob</TableCell>
+                <TableCell align="center">Date of Birth</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {data?.map(row => (
+              {filteredData.map((row) => (
                 <TableRow key={row.name}>
                   <TableCell align="center">{row.name}</TableCell>
                   <TableCell align="center">{row.department}</TableCell>
@@ -100,12 +140,14 @@ export default function SimpleTable() {
           </Table>
         </TableContainer>
       )}
-      <Link className={classes.link} to="/">
-        {" "}
-        <Typography align="left">
-          &#x2190; Head back to save data
-        </Typography>{" "}
-      </Link>
-    </div>
+
+      <Box mt={3}>
+        <Link to="/" className={classes.link}>
+          <Typography variant="body1">
+            &#x2190; Head back to save data
+          </Typography>
+        </Link>
+      </Box>
+    </Container>
   );
 }
